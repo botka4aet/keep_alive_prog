@@ -1,0 +1,20 @@
+{
+	"tick_time": 60,
+	"coma_time": 1800,
+	"log_time": 2400,
+	"restart_time": 3600,
+	"Directories": [
+		{
+			"cfg_name": "",
+			"tick_time": 60,
+			"coma_time": 1800,
+			"log_type": false,
+			"log_time": 2400,
+			"restart_time": 3600,
+			"dir_name": "",
+			"exe_name": "",
+			"update_fname": "",
+			"update_name": ""
+		}
+	]
+}
