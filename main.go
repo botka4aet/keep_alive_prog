@@ -35,14 +35,13 @@ type Directory struct {
 func main() {
 	jsonFile, err := os.Open("kap_cfg.json")
 	if err != nil {
-		fmt.Println(err)
+		logerror(err,"[MAIN]")
+	} else {
+		fmt.Println(logtime("[MAIN]"), "Starting MAIN process...")
 	}
 	defer jsonFile.Close()
 	byteValue, _ := io.ReadAll(jsonFile)
 	var config kap_cfg
-
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'users' which we defined above
 	json.Unmarshal(byteValue, &config)
 
 	for _, dir := range config.Directories {
