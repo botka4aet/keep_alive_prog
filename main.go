@@ -62,8 +62,11 @@ func main() {
 			dir.Restart_time = config.Restart_time
 		}
 
-		fmt.Println(logtime(), "Starting...", dir.Cfg_name)
+		fmt.Println(logtime(dir.Cfg_name), "Starting...")
 		go kap_routine(dir)
+	}
+	for {
+		time.Sleep(3600)
 	}
 }
 
@@ -72,7 +75,6 @@ func kap_routine(dir Directory) {
 	var pid int32
 	var stimec bool
 	ticktime := time.Second * time.Duration(dir.Tick_time)
-
 	var check_type bool
 	if dir.Update_fname != "" {
 		check_type = true
@@ -92,50 +94,48 @@ func kap_routine(dir Directory) {
 		var restart bool
 		var restart_reason string
 		var check_result string
-		if check_type {
-			fileinfo, err := os.Stat(dir.Update_fname)
-			if err != nil {
-				logerror(err)
-				continue
-			}
-			modtime := fileinfo.ModTime()
-			// pr.Зачем переназначается время?
-			if modtime.Before(dtime) {
-				dtime = modtime
-			}
-			// prend
-			tsince := time.Since(modtime).Seconds()
-			if pid != 0 && tsince > dir.Restart_time && !restart {
-				restart_reason = fmt.Sprintf(logtime(), "Restarting for old file", fileinfo.Name(), "\n")
-				restart = true
-			} else if tsince > dir.Log_time {
-				check_result = check_result + fmt.Sprintf(logtime(), "Outdated file -", fileinfo.Name(), "-", tsince/60, "min\n")
-			}
-		} else {
-			entries, err := os.ReadDir(dir.Update_name)
-			if err != nil {
-				logerror(err)
-				continue
-			}
-
-			for _, e := range entries {
-				if e.IsDir() {
+		//Проверяем логи, если мы уже отслеживаем процесс
+		if pid != 0 {
+			//Проверяем определенный лог-файл
+			if check_type {
+				fileinfo, err := os.Stat(dir.Update_fname)
+				if err != nil {
+					logerror(err,dir.Cfg_name)
 					continue
 				}
-				fileinfo, _ := e.Info()
 				modtime := fileinfo.ModTime()
-				// pr.Зачем переназначается время?
-				if modtime.Before(dtime) {
-					dtime = modtime
-				}
-				// prend
 				tsince := time.Since(modtime).Seconds()
 				if pid != 0 && tsince > dir.Restart_time && !restart {
-					restart_reason = fmt.Sprintf(logtime(), "Restarting for old file", fileinfo.Name(), "\n")
+					restart_reason = fmt.Sprint(logtime(dir.Cfg_name), " Restarting for old file", fileinfo.Name(), "\n")
 					restart = true
-				} else if tsince > dir.Log_time && tsince < dir.Restart_time {
-					if dir.Log_type || check_result == "" {
-						check_result = check_result + fmt.Sprintf(logtime(), "Outdated file -", fileinfo.Name(), "-", tsince/60, "min\n")
+				} else if tsince > dir.Log_time {
+					check_result = fmt.Sprintf("%vOutdated file - %v - %.2f min\n", logtime(dir.Cfg_name),fileinfo.Name(), tsince/60)
+				}
+			//Проверяем папку лог-файлов
+			} else {
+				entries, err := os.ReadDir(dir.Update_name)
+				if err != nil {
+					logerror(err,dir.Cfg_name)
+					continue
+				}
+				for _, e := range entries {
+					if e.IsDir() {
+						continue
+					}
+					fileinfo, _ := e.Info()
+					modtime := fileinfo.ModTime()
+
+					tsince := time.Since(modtime).Seconds()
+					if pid != 0 && tsince > dir.Restart_time && !restart {
+						restart_reason = fmt.Sprint(logtime(dir.Cfg_name), "Restarting for old file", fileinfo.Name(), "\n")
+						restart = true
+					} else if tsince > dir.Log_time && tsince < dir.Restart_time {
+						if dir.Log_type {
+							check_result = check_result + fmt.Sprintf("%vOutdated file - %v - %.2f min\n", logtime(dir.Cfg_name),fileinfo.Name(), tsince/60)
+						} else if !modtime.After(dtime) {
+							dtime = modtime
+							check_result = fmt.Sprintf("%vOutdated file - %v - %.2f min\n", logtime(dir.Cfg_name),fileinfo.Name(), tsince/60)
+						}
 					}
 				}
 			}
@@ -143,11 +143,11 @@ func kap_routine(dir Directory) {
 		if check_result != "" {
 			fmt.Print(check_result)
 		}
-
 		if count > 5 {
-			restart_reason = fmt.Sprintf(logtime(), "Restarting for errors\n")
+			restart_reason = fmt.Sprint(logtime(dir.Cfg_name), " Restarting for errors\n")
 			restart = true
 		}
+
 		processes, _ := process.Processes()
 		for _, p := range processes {
 			n, _ := p.Name()
@@ -156,14 +156,14 @@ func kap_routine(dir Directory) {
 			}
 			l, err := p.Exe()
 			if err != nil {
-				logerror(err)
+				logerror(err,dir.Cfg_name)
 				continue
 			} else if l != dir.Dir_name+n {
 				continue
 			}
 			nid, err := p.Ppid()
 			if err != nil {
-				logerror(err)
+				logerror(err,dir.Cfg_name)
 				continue
 			}
 			if nid != pid {
@@ -176,28 +176,29 @@ func kap_routine(dir Directory) {
 			}
 			if restart {
 				fmt.Print(restart_reason)
-				fmt.Println(logtime(), "Killing old process...")
+				fmt.Println(logtime(dir.Cfg_name), "Killing old process...")
 				p.Kill()
+				pid = 0
 			}
 			count = 0
 		}
 		if restart {
 			time.Sleep(5 * time.Second)
-			fmt.Println(logtime(), "Starting new process...")
+			fmt.Println(logtime(dir.Cfg_name), "Starting new process...")
 			cmd := exec.Command("cmd.exe", "/C", "start", dir.Dir_name+dir.Exe_name)
 			cmd.Dir = dir.Dir_name
 			err := cmd.Run()
 			if err != nil {
-				logerror(err)
+				logerror(err,dir.Cfg_name)
 			}
 		}
 	}
 }
 
-func logtime() string {
-	return fmt.Sprint(time.Now().Format("[15:04:05]"))
+func logtime(cfg_name string) string {
+	return fmt.Sprint("["+cfg_name+"]",time.Now().Format("[15:04:05]"))
 }
 
-func logerror(err error) {
-	fmt.Println(logtime(), err)
+func logerror(err error,cfg_name string) {
+	fmt.Println(logtime(cfg_name), err)
 }
