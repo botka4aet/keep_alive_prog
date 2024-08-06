@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -20,8 +21,8 @@ type kap_cfg struct {
 }
 
 type Directory struct {
-	Tick_time    int     `json:"tick_time"`
-	Coma_time    float64 `json:"coma_time"`
+	Cfg_name     string `json:"cfg_name"`
+	Exe_name     string `json:"exe_name"`
 	Dir_name     string `json:"dir_name"`
 	Update_fname string `json:"update_fname"`
 	Update_name  string `json:"update_name"`
@@ -38,26 +39,26 @@ type Directory struct {
 func init() {
 	err := os.Remove("KAP_logs.log")
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println(logtime("[MAIN]"),err)
+		fmt.Println(logtime("[MAIN]"), err)
 	}
 }
 
 func main() {
 	jsonFile, err := os.Open("kap_cfg.json")
 	if err != nil {
-		fmt.Println(logtime("MAIN"),err)
+		fmt.Println(logtime("MAIN"), err)
 	} else {
 		fmt.Println(logtime("MAIN"), "Starting MAIN process...")
 	}
 	defer jsonFile.Close()
 	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
-		fmt.Println(logtime("MAIN"),err)
+		fmt.Println(logtime("MAIN"), err)
 	}
 	var config kap_cfg
 	err = json.Unmarshal(byteValue, &config)
 	if err != nil {
-		fmt.Println(logtime("MAIN"),err)
+		fmt.Println(logtime("MAIN"), err)
 	}
 	ch := make(chan string)
 	var i int
@@ -83,7 +84,7 @@ func main() {
 		}
 
 		fmt.Println(logtime(dir.Cfg_name), "Starting...")
-		go kap_routine(dir,ch)
+		go kap_routine(dir, ch)
 	}
 	for i > 0 {
 		mes := <-ch
@@ -91,7 +92,7 @@ func main() {
 	}
 }
 
-func kap_routine(dir Directory,ch chan<- string) {
+func kap_routine(dir Directory, ch chan<- string) {
 	var count uint8
 	var pid int32
 	var stimec bool
