@@ -13,8 +13,8 @@
 			"restart_time": 3600,
 			"dir_name": "",
 			"exe_name": "",
-			"update_fname": "",
-			"update_name": ""
+			"update_name": "",
+			"update_fname": ""
 		}
 	]
 }
