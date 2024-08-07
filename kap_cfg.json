@@ -8,7 +8,7 @@
 			"cfg_name": "",
 			"tick_time": 60,
 			"coma_time": 1800,
-			"log_type": false,
+			"log_type": 0,
 			"log_time": 2400,
 			"restart_time": 3600,
 			"dir_name": "",
