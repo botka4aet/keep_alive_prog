@@ -111,13 +111,13 @@ func kap_routine(dir Directory, ch chan<- string) {
 	dtime := time.Now()
 	for {
 		time.Sleep(ticktime)
-		if time.Since(dtime).Seconds() < dir.Coma_time {
+		if time.Since(dtime).Seconds() < dir.Coma_time && pid != 0 {
 			if dir.Log_type & 1 != 0 && !coma_status {
 				ch <- fmt.Sprintln(logtime(dir.Cfg_name), "Skiping time~")
 				coma_status = true
 			}
 			continue
-		} else if dir.Log_type & 1 != 0 && coma_status {
+		} else if dir.Log_type & 1 != 0 && coma_status && pid != 0 {
 			ch <- fmt.Sprintln(logtime(dir.Cfg_name), "On watch.")
 			coma_status = false
 		}
