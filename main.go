@@ -36,15 +36,6 @@ type Directory struct {
 	Log_type uint8 `json:"log_type"`
 }
 
-func init() {
-	_, err := os.Stat("KAP_logs")
-	if os.IsNotExist(err) {
-		if err := os.Mkdir("KAP_logs", 0777); err != nil {
-			panic(err)
-		}
-	}
-}
-
 func main() {
 	jsonFile, err := os.Open("kap_cfg.json")
 	if err != nil {
