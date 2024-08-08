@@ -138,12 +138,9 @@ func kap_routine(dir Directory, ch chan<- string) {
 			} else if l != dir.Dir_name+n {
 				continue
 			}
-			nid, err = p.Ppid()
-			if err != nil {
-				ch <- logerror(err, dir.Cfg_name)
-				break
-			}
+			nid = p.Pid
 			count = 0
+			break
 		}
 
 		var restart_reason string
