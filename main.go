@@ -78,7 +78,7 @@ func main() {
 		}
 		if dir.Update_fname != "" {
 			dir.Update_name = ""
-		} else if dir.Update_name == "" && dir.Update_fname == "" {
+		} else if dir.Log_type&4 != 0 || (dir.Update_name == "" && dir.Update_fname == "") {
 			dir.Update_fname = log_file
 		}
 
@@ -95,8 +95,15 @@ func main() {
 
 		for {
 			mes := <-ch
-			fmt.Print(mes)
-			_, _ = fi.WriteString(mes)
+			if mes != "" {
+				fmt.Print(mes)
+				_, _ = fi.WriteString(mes)
+			} else {
+				err := os.Chtimes(log_file, time.Now(), time.Now())
+				if err != nil {
+					logerror(err,"MAIN")
+				}
+			}
 		}
 	}
 }
@@ -113,6 +120,9 @@ func kap_routine(dir Directory, ch chan<- string) {
 	dtime := time.Now()
 	for {
 		time.Sleep(ticktime)
+		if dir.Log_type&4 != 0 {
+			ch <- ""
+		}
 		if time.Since(dtime).Seconds() < dir.Coma_time && pid != 0 {
 			if dir.Log_type&1 != 0 && !coma_status {
 				ch <- fmt.Sprintln(logtime(dir.Cfg_name), "Skiping time~")
